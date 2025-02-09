@@ -7,3 +7,7 @@
 *.bin
 *.log
 *.pcap
+
+.zig-cache
+zig-cache
+zig-out
