@@ -1,17 +1,17 @@
 const std = @import("std");
 
+const name = "osz";
+
 pub fn build(b: *std.Build) void {
     const target = b.resolveTargetQuery(.{
         .cpu_arch = .riscv32,
         .os_tag = .freestanding,
         .abi = .none,
     });
-    const main = b.path("src/kernel.zig");
-    const root = b.path("src/root.zig");
-    const name = "osz";
 
     const optimize = b.standardOptimizeOption(.{});
 
+    const root = b.path("src/root.zig");
     const lib = b.addStaticLibrary(.{
         .name = name,
         .root_source_file = root,
@@ -21,6 +21,7 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
+    const main = b.path("src/kernel.zig");
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = main,
