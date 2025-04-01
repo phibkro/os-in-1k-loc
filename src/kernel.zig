@@ -21,6 +21,14 @@ const console: std.io.AnyWriter = .{
     .writeFn = write_fn,
 };
 
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    _ = error_return_trace;
+    _ = ret_addr;
+
+    console.print("PANIC: {s}\n", .{msg}) catch {};
+    while (true) asm volatile ("wfi");
+}
+
 export fn kernel_main() noreturn {
     // The .bss section is first initialized to zero using the memset function.
     // Although some bootloaders may recognize and zero-clear the .bss section,
