@@ -1,3 +1,4 @@
+const std = @import("std");
 const sbi = @import("common.zig");
 /// We can also declare it as extern char __bss;,
 /// but __bss alone means "the value at the 0th byte of the .bss section"
@@ -8,6 +9,18 @@ const bss = @extern([*]u8, .{ .name = "__bss" });
 const bss_end = @extern([*]u8, .{ .name = "__bss_end" });
 const stack_top = @extern([*]u8, .{ .name = "__stack_top" });
 
+fn write_fn(_: *const anyopaque, bytes: []const u8) !usize {
+    for (bytes) |c| {
+        _ = sbi.put_char(c);
+    }
+    return bytes.len;
+}
+
+const console: std.io.AnyWriter = .{
+    .context = undefined,
+    .writeFn = write_fn,
+};
+
 export fn kernel_main() noreturn {
     // The .bss section is first initialized to zero using the memset function.
     // Although some bootloaders may recognize and zero-clear the .bss section,
@@ -17,9 +30,7 @@ export fn kernel_main() noreturn {
 
     const hello = "\n\nhello kernel!\n";
 
-    for (hello) |c| {
-        sbi.put_char(c);
-    }
+    console.print(hello, .{}) catch {};
 
     // Finally, the function enters an infinite loop and the kernel terminates.
     while (true) asm volatile ("wfi");
