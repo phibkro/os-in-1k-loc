@@ -30,6 +30,8 @@ pub fn build(b: *std.Build) void {
         .strip = false,
     });
 
+    exe.entry = .disabled;
+
     exe.setLinkerScript(b.path("src/kernel.ld"));
 
     b.installArtifact(exe);
