@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
         .name = name,
         .root_source_file = main,
         .target = target,
-        .optimize = optimize,
+        .optimize = .ReleaseSmall,
         .strip = false,
     });
 
