@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
 
     const main = b.path("src/kernel.zig");
     const exe = b.addExecutable(.{
-        .name = name,
+        .name = "kernel.elf",
         .root_source_file = main,
         .target = target,
         .optimize = .ReleaseSmall,
