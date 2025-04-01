@@ -1,3 +1,4 @@
+const sbi = @import("common.zig");
 /// We can also declare it as extern char __bss;,
 /// but __bss alone means "the value at the 0th byte of the .bss section"
 /// instead of "the start address of the .bss section".
@@ -6,32 +7,6 @@
 const bss = @extern([*]u8, .{ .name = "__bss" });
 const bss_end = @extern([*]u8, .{ .name = "__bss_end" });
 const stack_top = @extern([*]u8, .{ .name = "__stack_top" });
-
-const SbiRet = struct { err: usize, value: usize };
-pub fn sbi_call(arg0: usize, arg1: usize, arg2: usize, arg3: usize, arg4: usize, arg5: usize, fid: usize, eid: usize) SbiRet {
-    var err: usize = undefined;
-    var value: usize = undefined;
-
-    asm volatile ("ecall"
-        : [err] "={a0}" (err),
-          [value] "={a1}" (value),
-        : [arg0] "{a0}" (arg0),
-          [arg1] "{a1}" (arg1),
-          [arg2] "{a2}" (arg2),
-          [arg3] "{a3}" (arg3),
-          [arg4] "{a4}" (arg4),
-          [arg5] "{a5}" (arg5),
-          [arg6] "{a6}" (fid),
-          [arg7] "{a7}" (eid),
-        : "memory"
-    );
-
-    return .{ .err = err, .value = value };
-}
-
-fn put_char(c: u8) void {
-    _ = sbi_call(c, 0, 0, 0, 0, 0, 0, 1);
-}
 
 export fn kernel_main() noreturn {
     // The .bss section is first initialized to zero using the memset function.
@@ -43,7 +18,7 @@ export fn kernel_main() noreturn {
     const hello = "\n\nhello kernel!\n";
 
     for (hello) |c| {
-        put_char(c);
+        sbi.put_char(c);
     }
 
     // Finally, the function enters an infinite loop and the kernel terminates.
