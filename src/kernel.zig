@@ -70,13 +70,13 @@ var next_paddr = free_ram;
 
 fn alloc_page(n: usize) ![*]u8 {
     const paddr = next_paddr;
-    next_paddr += n * sbi.PAGE_SIZE;
+    next_paddr += n * sbi.page_size;
 
     if (@intFromPtr(next_paddr) > @intFromPtr(free_ram_end)) {
         return error.OutOfMemory;
     }
 
-    @memset(paddr[0 .. n * sbi.PAGE_SIZE], 0);
+    @memset(paddr[0 .. n * sbi.page_size], 0);
 
     return paddr;
 }

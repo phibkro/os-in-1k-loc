@@ -1,4 +1,4 @@
-pub const PAGE_SIZE = 4096;
+pub const page_size = 4096;
 
 const SbiRet = struct { err: usize, value: usize };
 fn sbi_call(
