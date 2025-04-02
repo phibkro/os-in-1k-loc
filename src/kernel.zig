@@ -44,20 +44,20 @@ fn main() !void {
     const bss_len = @intFromPtr(bss) - @intFromPtr(bss_end);
     @memset(bss[0..bss_len], 0);
 
+    // Trap handling
+    write_csr("stvec", @intFromPtr(&kernel_entry));
+    defer asm volatile ("unimp");
+
+    // Printing to console
+    const hello = "\n\nhello kernel!\n";
+    try console.print(hello, .{});
+
     // Memory allocation
     const paddr0 = try alloc_page(2);
     const paddr1 = try alloc_page(1);
     try console.print("alloc_pages test: paddr0={*}\n", .{paddr0});
     try console.print("alloc_pages test: paddr1={*}\n", .{paddr1});
 
-    // Trap handling
-    write_csr("stvec", @intFromPtr(&kernel_entry));
-
-    // Printing to console
-    const hello = "\n\nhello kernel!\n";
-    try console.print(hello, .{});
-
-    asm volatile ("unimp");
     // @panic("booted!");
 }
 
