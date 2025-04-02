@@ -122,6 +122,31 @@ export fn kernel_entry() align(4) callconv(.Naked) void {
     );
 }
 
+// Trap handling
+
+export fn handle_trap(trap_frame: *const TrapFrame) void {
+    _ = trap_frame;
+
+    const scause = read_csr("scause"); // mcause
+    const stval = read_csr("stval"); // mepc
+    const user_pc = read_csr("sepc"); // utvec
+
+    std.debug.panic("Unexpected trap scause={x}, stval={x}, sepc={x}\n", .{ scause, stval, user_pc });
+}
+
+fn read_csr(comptime reg: []const u8) usize {
+    return asm ("csrr %[ret], " ++ reg
+        : [ret] "=r" (-> usize),
+    );
+}
+
+fn write_csr(comptime reg: []const u8, val: usize) void {
+    asm volatile ("csrw " ++ reg ++ ", %[val]"
+        :
+        : [val] "r" (val),
+    );
+}
+
 const TrapFrame = extern struct {
     ra: usize,
     gp: usize,
@@ -156,28 +181,17 @@ const TrapFrame = extern struct {
     sp: usize,
 };
 
-export fn handle_trap(trap_frame: *const TrapFrame) void {
-    _ = trap_frame;
+// Panic
 
-    const scause = read_csr("scause"); // mcause
-    const stval = read_csr("stval"); // mepc
-    const user_pc = read_csr("sepc"); // utvec
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    _ = error_return_trace;
+    _ = ret_addr;
 
-    std.debug.panic("Unexpected trap scause={x}, stval={x}, sepc={x}\n", .{ scause, stval, user_pc });
+    console.print("PANIC: {s}\n", .{msg}) catch {};
+    while (true) asm volatile ("wfi");
 }
 
-fn read_csr(comptime reg: []const u8) usize {
-    return asm ("csrr %[ret], " ++ reg
-        : [ret] "=r" (-> usize),
-    );
-}
-
-fn write_csr(comptime reg: []const u8, val: usize) void {
-    asm volatile ("csrw " ++ reg ++ ", %[val]"
-        :
-        : [val] "r" (val),
-    );
-}
+// Printing to console
 
 const console: std.io.AnyWriter = .{
     .context = undefined,
@@ -189,12 +203,4 @@ fn write_fn(_: *const anyopaque, bytes: []const u8) !usize {
         _ = sbi.put_char(c);
     }
     return bytes.len;
-}
-
-pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
-    _ = error_return_trace;
-    _ = ret_addr;
-
-    console.print("PANIC: {s}\n", .{msg}) catch {};
-    while (true) asm volatile ("wfi");
 }
