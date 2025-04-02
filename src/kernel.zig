@@ -35,12 +35,20 @@ export fn kernel_main() noreturn {
     const bss_len = @intFromPtr(bss) - @intFromPtr(bss_end);
     @memset(bss[0..bss_len], 0);
 
-    write_csr("stvec", @intFromPtr(&kernel_entry));
+    // Memory allocation
+    // const paddr0 = alloc_page(2);
+    // const paddr1 = alloc_page(1);
+    // console.print("alloc_pages test: paddr0={*}\n", .{paddr0}) catch {};
+    // console.print("alloc_pages test: paddr1={*}\n", .{paddr1}) catch {};
+    // @panic("booted!");
+
+    // Trap handling
+    // write_csr("stvec", @intFromPtr(&kernel_entry));
     // asm volatile ("unimp");
 
-    const hello = "\n\nhello kernel!\n";
-
-    console.print(hello, .{}) catch {};
+    // Printing to console
+    // const hello = "\n\nhello kernel!\n";
+    // console.print(hello, .{}) catch {};
 
     // Finally, the function enters an infinite loop and the kernel terminates.
     while (true) asm volatile ("wfi");
@@ -120,6 +128,26 @@ export fn kernel_entry() align(4) callconv(.Naked) void {
         \\lw sp,  4 * 30(sp)
         \\sret
     );
+}
+
+// Memory allocation
+
+const free_ram = @extern([*]u8, .{ .name = "__free_ram" });
+const free_ram_end = @extern([*]u8, .{ .name = "__free_ram_end" });
+
+var next_paddr = free_ram;
+
+fn alloc_page(n: usize) [*]u8 {
+    const paddr = next_paddr;
+    next_paddr += n * sbi.PAGE_SIZE;
+
+    if (@intFromPtr(next_paddr) > @intFromPtr(free_ram_end)) {
+        @panic("Out of memory");
+    }
+
+    @memset(paddr[0 .. n * sbi.PAGE_SIZE], 0);
+
+    return paddr;
 }
 
 // Trap handling
