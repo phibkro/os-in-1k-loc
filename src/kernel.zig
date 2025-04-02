@@ -45,19 +45,19 @@ fn main() !void {
     @memset(bss[0..bss_len], 0);
 
     // Memory allocation
-    // const paddr0 = alloc_page(2);
-    // const paddr1 = alloc_page(1);
-    // try console.print("alloc_pages test: paddr0={*}\n", .{paddr0});
-    // try console.print("alloc_pages test: paddr1={*}\n", .{paddr1});
+    const paddr0 = try alloc_page(2);
+    const paddr1 = try alloc_page(1);
+    try console.print("alloc_pages test: paddr0={*}\n", .{paddr0});
+    try console.print("alloc_pages test: paddr1={*}\n", .{paddr1});
 
     // Trap handling
-    // write_csr("stvec", @intFromPtr(&kernel_entry));
-    // asm volatile ("unimp");
+    write_csr("stvec", @intFromPtr(&kernel_entry));
 
     // Printing to console
-    // const hello = "\n\nhello kernel!\n";
-    // try console.print(hello, .{});
+    const hello = "\n\nhello kernel!\n";
+    try console.print(hello, .{});
 
+    asm volatile ("unimp");
     // @panic("booted!");
 }
 
@@ -144,12 +144,12 @@ const free_ram_end = @extern([*]u8, .{ .name = "__free_ram_end" });
 
 var next_paddr = free_ram;
 
-fn alloc_page(n: usize) [*]u8 {
+fn alloc_page(n: usize) ![*]u8 {
     const paddr = next_paddr;
     next_paddr += n * sbi.PAGE_SIZE;
 
     if (@intFromPtr(next_paddr) > @intFromPtr(free_ram_end)) {
-        @panic("Out of memory");
+        return error.OutOfMemory;
     }
 
     @memset(paddr[0 .. n * sbi.PAGE_SIZE], 0);
