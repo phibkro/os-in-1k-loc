@@ -9,18 +9,6 @@ pub fn build(b: *std.Build) void {
         .abi = .none,
     });
 
-    const optimize = b.standardOptimizeOption(.{});
-
-    const root = b.path("src/root.zig");
-    const lib = b.addStaticLibrary(.{
-        .name = name,
-        .root_source_file = root,
-        .target = target,
-        .optimize = optimize,
-    });
-
-    b.installArtifact(lib);
-
     const main = b.path("src/kernel.zig");
     const exe = b.addExecutable(.{
         .name = "kernel.elf",
@@ -50,24 +38,4 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run QEMU");
     run_step.dependOn(&run_cmd.step);
-
-    const lib_unit_tests = b.addTest(.{
-        .root_source_file = root,
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
-        .root_source_file = main,
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_exe_unit_tests.step);
 }
