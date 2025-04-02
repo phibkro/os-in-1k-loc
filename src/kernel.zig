@@ -9,41 +9,6 @@ const bss = @extern([*]u8, .{ .name = "__bss" });
 const bss_end = @extern([*]u8, .{ .name = "__bss_end" });
 const stack_top = @extern([*]u8, .{ .name = "__stack_top" });
 
-fn write_fn(_: *const anyopaque, bytes: []const u8) !usize {
-    for (bytes) |c| {
-        _ = sbi.put_char(c);
-    }
-    return bytes.len;
-}
-
-const console: std.io.AnyWriter = .{
-    .context = undefined,
-    .writeFn = write_fn,
-};
-
-pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
-    _ = error_return_trace;
-    _ = ret_addr;
-
-    console.print("PANIC: {s}\n", .{msg}) catch {};
-    while (true) asm volatile ("wfi");
-}
-
-export fn kernel_main() noreturn {
-    // The .bss section is first initialized to zero using the memset function.
-    // Although some bootloaders may recognize and zero-clear the .bss section,
-    // but we initialize it manually just in case.
-    const bss_len = @intFromPtr(bss) - @intFromPtr(bss_end);
-    @memset(bss[0..bss_len], 0);
-
-    const hello = "\n\nhello kernel!\n";
-
-    console.print(hello, .{}) catch {};
-
-    // Finally, the function enters an infinite loop and the kernel terminates.
-    while (true) asm volatile ("wfi");
-}
-
 /// The __attribute__((naked)) attribute
 /// instructs the compiler not to generate unnecessary code
 /// before and after the function body,
@@ -61,4 +26,39 @@ export fn boot() linksection(".text.boot") callconv(.Naked) void {
         :
         : [stack_top] "r" (stack_top),
     );
+}
+
+export fn kernel_main() noreturn {
+    // The .bss section is first initialized to zero using the memset function.
+    // Although some bootloaders may recognize and zero-clear the .bss section,
+    // but we initialize it manually just in case.
+    const bss_len = @intFromPtr(bss) - @intFromPtr(bss_end);
+    @memset(bss[0..bss_len], 0);
+
+    const hello = "\n\nhello kernel!\n";
+
+    console.print(hello, .{}) catch {};
+
+    // Finally, the function enters an infinite loop and the kernel terminates.
+    while (true) asm volatile ("wfi");
+}
+
+const console: std.io.AnyWriter = .{
+    .context = undefined,
+    .writeFn = write_fn,
+};
+
+fn write_fn(_: *const anyopaque, bytes: []const u8) !usize {
+    for (bytes) |c| {
+        _ = sbi.put_char(c);
+    }
+    return bytes.len;
+}
+
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    _ = error_return_trace;
+    _ = ret_addr;
+
+    console.print("PANIC: {s}\n", .{msg}) catch {};
+    while (true) asm volatile ("wfi");
 }
