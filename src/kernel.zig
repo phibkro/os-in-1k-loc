@@ -29,6 +29,15 @@ export fn boot() linksection(".text.boot") callconv(.Naked) void {
 }
 
 export fn kernel_main() noreturn {
+    main() catch |err| {
+        std.debug.panic("kernel_main: {s}\n", .{@errorName(err)}) catch {};
+    };
+
+    // Finally, the function enters an infinite loop and the kernel terminates.
+    while (true) asm volatile ("wfi");
+}
+
+fn main() !void {
     // The .bss section is first initialized to zero using the memset function.
     // Although some bootloaders may recognize and zero-clear the .bss section,
     // but we initialize it manually just in case.
@@ -38,9 +47,8 @@ export fn kernel_main() noreturn {
     // Memory allocation
     // const paddr0 = alloc_page(2);
     // const paddr1 = alloc_page(1);
-    // console.print("alloc_pages test: paddr0={*}\n", .{paddr0}) catch {};
-    // console.print("alloc_pages test: paddr1={*}\n", .{paddr1}) catch {};
-    // @panic("booted!");
+    // try console.print("alloc_pages test: paddr0={*}\n", .{paddr0});
+    // try console.print("alloc_pages test: paddr1={*}\n", .{paddr1});
 
     // Trap handling
     // write_csr("stvec", @intFromPtr(&kernel_entry));
@@ -48,10 +56,9 @@ export fn kernel_main() noreturn {
 
     // Printing to console
     // const hello = "\n\nhello kernel!\n";
-    // console.print(hello, .{}) catch {};
+    // try console.print(hello, .{});
 
-    // Finally, the function enters an infinite loop and the kernel terminates.
-    while (true) asm volatile ("wfi");
+    // @panic("booted!");
 }
 
 export fn kernel_entry() align(4) callconv(.Naked) void {
